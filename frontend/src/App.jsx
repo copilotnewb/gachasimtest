@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from './api.js'
+import { AdventureGame } from './AdventureGame.jsx'
 
 const ROLL_ANIMATION_DURATION = 4200
 const ROLL_CARD_WIDTH = 120
@@ -187,6 +188,7 @@ function useAuth() {
 function Nav({ user, onLogout }) {
   const rarePity = user?.pity_rare ?? 0
   const ultraPity = user?.pity_ultra ?? 0
+  const bestDive = user?.best_adventure_score ?? 0
   const rareRemaining = Math.max(0, 10 - rarePity)
   const ultraRemaining = Math.max(0, 90 - ultraPity)
   const rareTitle = rareRemaining === 0
@@ -207,6 +209,7 @@ function Nav({ user, onLogout }) {
           <span className="tag">Gems: <b>{user.gems.toLocaleString()}</b></span>
           <span className="tag" title={rareTitle}>Rare pity: <b>{rarePity}</b>/10</span>
           <span className="tag" title={ultraTitle}>Ultra pity: <b>{ultraPity}</b>/90</span>
+          <span className="tag">Best dive: <b>{bestDive}</b></span>
           <button className="btn secondary" onClick={onLogout}>Log out</button>
         </> : null}
       </div>
@@ -357,6 +360,19 @@ function Main({ user, setUser, onLogout }) {
   const [msg, setMsg] = useState('')
   const [rollShowcase, setRollShowcase] = useState(null)
 
+  const bestRelic = useMemo(() => {
+    if (!items.length) return { rarity: 'none', name: null }
+    const priority = { ultra: 3, rare: 2, common: 1 }
+    return items.reduce((best, item) => {
+      const rank = priority[item.rarity] || 0
+      const bestRank = priority[best.rarity] || 0
+      if (rank > bestRank) {
+        return { rarity: item.rarity, name: item.name }
+      }
+      return best
+    }, { rarity: 'none', name: null })
+  }, [items])
+
   async function loadAll() {
     const [bs, inv, me] = await Promise.all([api.banners(), api.inventory(), api.auth.me()])
     setBanners(bs); setItems(inv); setUser(me);
@@ -389,6 +405,26 @@ function Main({ user, setUser, onLogout }) {
     } finally { setBusy(false) }
   }
 
+  function handleAdventureResult(result) {
+    setUser(prev => prev ? {
+      ...prev,
+      gems: result.newBalance,
+      best_adventure_score: result.bestScore,
+      last_adventure_at: result.lastAdventureAt || prev.last_adventure_at
+    } : prev)
+    const rarityNames = {
+      none: 'no relic',
+      common: 'a common relic',
+      rare: 'a rare relic',
+      ultra: 'an ultra relic'
+    }
+    if (result.reward > 0) {
+      setMsg(`Aether Dive score ${result.score}. ${rarityNames[result.rarityUsed] || 'relic power'} granted ×${result.multiplier.toFixed(2)} for +${result.reward} gems!`)
+    } else {
+      setMsg(`Aether Dive score ${result.score}. No gems banked—collect more shards next time.`)
+    }
+  }
+
   return (
     <>
       <div className="wrap">
@@ -408,6 +444,7 @@ function Main({ user, setUser, onLogout }) {
             <Inventory items={items} />
           </div>
           <div className="stack">
+            <AdventureGame user={user} bestRelic={bestRelic} onAdventureResult={handleAdventureResult} />
             <CollectionTracker banners={banners} items={items} />
             <div className="card">
               <h3>About</h3>
@@ -416,6 +453,7 @@ function Main({ user, setUser, onLogout }) {
                 <li><b>Pity:</b> Rare at 10, Ultra at 90</li>
                 <li><b>Cost:</b> 160 gems per roll (10x = 1440)</li>
                 <li><b>Daily:</b> +100 (manual) and +300 (cron to all users at midnight)</li>
+                <li><b>Aether Dive:</b> Your highest-rarity relic from the gacha boosts gem rewards in the 3D mini-game.</li>
               </ul>
               {msg ? <div className="toast">{msg}</div> : null}
             </div>

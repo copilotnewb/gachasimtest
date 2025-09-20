@@ -22,5 +22,9 @@ export const api = {
   banners: () => api.request('https://gachasimtest.onrender.com/api/banners'),
   roll: (bannerId, times) => api.request('https://gachasimtest.onrender.com/api/roll', { method: 'POST', body: JSON.stringify({ bannerId, times }) }),
   inventory: () => api.request('https://gachasimtest.onrender.com/api/inventory'),
-  claimDaily: () => api.request('https://gachasimtest.onrender.com/api/claim/daily', { method: 'POST' })
+  claimDaily: () => api.request('https://gachasimtest.onrender.com/api/claim/daily', { method: 'POST' }),
+  completeAdventure: score => api.request('https://gachasimtest.onrender.com/api/game/adventure', {
+    method: 'POST',
+    body: JSON.stringify({ score })
+  })
 }
