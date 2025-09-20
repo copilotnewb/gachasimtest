@@ -13,16 +13,28 @@ function useAuth() {
 }
 
 function Nav({ user, onLogout }) {
+  const rarePity = user?.pity_rare ?? 0
+  const ultraPity = user?.pity_ultra ?? 0
+  const rareRemaining = Math.max(0, 10 - rarePity)
+  const ultraRemaining = Math.max(0, 90 - ultraPity)
+  const rareTitle = rareRemaining === 0
+    ? 'Next rare is guaranteed on this pull'
+    : `${rareRemaining} ${rareRemaining === 1 ? 'pull' : 'pulls'} until guaranteed rare`
+  const ultraTitle = ultraRemaining === 0
+    ? 'Next ultra is guaranteed on this pull'
+    : `${ultraRemaining} ${ultraRemaining === 1 ? 'pull' : 'pulls'} until guaranteed ultra`
   return (
     <div className="nav">
       <div className="row">
         <div className="brand">✨ Gacha</div>
         <span className="tag">Demo</span>
       </div>
-      <div className="row">
+      <div className="row nav-user">
         {user ? <>
           <span className="tag">User: <b>{user.username}</b></span>
-          <span className="tag">Gems: <b>{user.gems}</b></span>
+          <span className="tag">Gems: <b>{user.gems.toLocaleString()}</b></span>
+          <span className="tag" title={rareTitle}>Rare pity: <b>{rarePity}</b>/10</span>
+          <span className="tag" title={ultraTitle}>Ultra pity: <b>{ultraPity}</b>/90</span>
           <button className="btn secondary" onClick={onLogout}>Log out</button>
         </> : null}
       </div>
@@ -102,6 +114,70 @@ function Inventory({ items }) {
   )
 }
 
+function CollectionTracker({ banners, items }) {
+  const ownedNames = React.useMemo(() => new Set(items.map(it => it.name)), [items])
+  const rarityOrder = ['ultra', 'rare', 'common']
+  const rarityLabels = {
+    common: 'Common ★',
+    rare: 'Rare ★★',
+    ultra: 'Ultra ★★★'
+  }
+
+  if (banners.length === 0) {
+    return (
+      <div className="card">
+        <h3>Collection Tracker</h3>
+        <div className="muted">No active banners to track right now.</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="card">
+      <h3>Collection Tracker</h3>
+      <div className="stack">
+        {banners.map(b => {
+          const groups = rarityOrder
+            .filter(r => Array.isArray(b.pool?.[r]) && b.pool[r].length)
+            .map(r => [r, b.pool[r]])
+          const total = groups.reduce((sum, [, names]) => sum + names.length, 0)
+          const ownedCount = groups.reduce((sum, [, names]) => (
+            sum + names.filter(name => ownedNames.has(name)).length
+          ), 0)
+          return (
+            <div key={b.id} className="collection-banner">
+              <div className="row">
+                <strong>{b.name}</strong>
+                <span className="muted">{ownedCount}/{total} owned</span>
+              </div>
+              <div className="collection-groups">
+                {groups.map(([rarity, names]) => (
+                  <div key={rarity}>
+                    <div className="collection-group-title">{rarityLabels[rarity] || rarity}</div>
+                    <ul className="collection-list">
+                      {names.map(name => {
+                        const hasItem = ownedNames.has(name)
+                        return (
+                          <li key={name} className={`collection-item ${hasItem ? 'is-owned' : 'is-missing'}`}>
+                            <span className={'rarity-' + rarity}>{name}</span>
+                            <span className={'tag ' + (hasItem ? 'tag-owned' : 'tag-missing')}>
+                              {hasItem ? 'Owned' : 'Missing'}
+                            </span>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function Main({ user, setUser, onLogout }) {
   const [banners, setBanners] = useState([])
   const [items, setItems] = useState([])
@@ -155,15 +231,18 @@ function Main({ user, setUser, onLogout }) {
           </div>
           <Inventory items={items} />
         </div>
-        <div className="card">
-          <h3>About</h3>
-          <p className="muted">All game logic runs on the backend: RNG, pity, banner rotation, and database writes. The frontend is a thin client.</p>
-          <ul>
-            <li><b>Pity:</b> Rare at 10, Ultra at 90</li>
-            <li><b>Cost:</b> 160 gems per roll (10x = 1440)</li>
-            <li><b>Daily:</b> +100 (manual) and +300 (cron to all users at midnight)</li>
-          </ul>
-          {msg ? <div className="toast">{msg}</div> : null}
+        <div className="stack">
+          <CollectionTracker banners={banners} items={items} />
+          <div className="card">
+            <h3>About</h3>
+            <p className="muted">All game logic runs on the backend: RNG, pity, banner rotation, and database writes. The frontend is a thin client.</p>
+            <ul>
+              <li><b>Pity:</b> Rare at 10, Ultra at 90</li>
+              <li><b>Cost:</b> 160 gems per roll (10x = 1440)</li>
+              <li><b>Daily:</b> +100 (manual) and +300 (cron to all users at midnight)</li>
+            </ul>
+            {msg ? <div className="toast">{msg}</div> : null}
+          </div>
         </div>
       </div>
     </div>

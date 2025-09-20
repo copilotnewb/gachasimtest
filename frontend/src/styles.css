@@ -34,3 +34,13 @@ a { color: var(--accent); text-decoration: none; }
 .list { list-style: none; padding: 0; margin: 0; }
 .list li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
 .toast { margin-top: 10px; }
+.nav-user { flex-wrap: wrap; justify-content: flex-end; gap: 8px; text-align: right; }
+.nav-user .btn { margin-left: auto; }
+.collection-banner { border: 1px solid rgba(255,255,255,.06); border-radius: 12px; padding: 12px; background: rgba(11,13,19,.45); display: grid; gap: 8px; }
+.collection-groups { display: grid; gap: 10px; }
+.collection-group-title { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.collection-list { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 6px; }
+.collection-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.03); }
+.collection-item.is-missing { opacity: .65; }
+.tag-owned { color: var(--good); border-color: rgba(79,211,141,.6); background: rgba(79,211,141,.12); }
+.tag-missing { color: var(--bad); border-color: rgba(255,106,106,.6); background: rgba(255,106,106,.12); }
