@@ -5,6 +5,12 @@ import bcrypt from 'bcryptjs';
 import db from './db.js';
 import { authMiddleware, signToken } from './auth.js';
 import { getActiveBanners, getBannerById, performRolls } from './gacha.js';
+import {
+  getAdventureHistory,
+  getAdventureCooldownSeconds,
+  getAdventureConfig,
+  performAdventure
+} from './adventure.js';
 import { startCrons } from './cron.js';
 
 dotenv.config();
@@ -81,6 +87,29 @@ app.post('/api/claim/daily', authMiddleware, (req, res) => {
   db.prepare('UPDATE users SET gems = gems + 100, last_daily_claim = ? WHERE id = ?').run(today, req.user.id);
   const updated = db.prepare('SELECT gems FROM users WHERE id = ?').get(req.user.id);
   res.json({ ok: true, gems: updated.gems, awarded: 100 });
+});
+
+// Expedition mini-game
+app.get('/api/adventure/history', authMiddleware, (req, res) => {
+  const history = getAdventureHistory(req.user.id, 10);
+  const cooldownSeconds = getAdventureCooldownSeconds(req.user.id);
+  res.json({ history, cooldownSeconds, config: getAdventureConfig() });
+});
+
+app.post('/api/adventure', authMiddleware, (req, res) => {
+  const party = Array.isArray(req.body?.party) ? req.body.party : [];
+  try {
+    const result = performAdventure({ userId: req.user.id, partyIds: party });
+    res.json(result);
+  } catch (e) {
+    if (e.code === 'COOLDOWN') {
+      return res.status(429).json({
+        error: e.message,
+        cooldownSeconds: Math.ceil((e.cooldownMs || 0) / 1000)
+      });
+    }
+    res.status(400).json({ error: String(e.message || e) });
+  }
 });
 
 // Start server + crons

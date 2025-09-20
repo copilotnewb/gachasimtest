@@ -7,12 +7,20 @@ export const api = {
     const t = api.token();
     if (t) headers['Authorization'] = 'Bearer ' + t;
     const res = await fetch(path, { ...opts, headers });
-    if (!res.ok) {
-      let msg = 'Request failed';
-      try { const j = await res.json(); msg = j.error || msg; } catch {}
-      throw new Error(msg);
+    let payload = null;
+    try {
+      payload = await res.json();
+    } catch (err) {
+      payload = null;
     }
-    return res.json();
+    if (!res.ok) {
+      const msg = payload?.error || 'Request failed';
+      const error = new Error(msg);
+      error.status = res.status;
+      if (payload) error.data = payload;
+      throw error;
+    }
+    return payload;
   },
   auth: {
     register: (u,p) => api.request('https://gachasimtest.onrender.com/api/auth/register', { method: 'POST', body: JSON.stringify({ username:u, password:p }) }),
@@ -20,7 +28,14 @@ export const api = {
     me: () => api.request('https://gachasimtest.onrender.com/api/me')
   },
   banners: () => api.request('https://gachasimtest.onrender.com/api/banners'),
-  roll: (bannerId, times) => api.request('https://gachasimtest.onrender.com/api/roll', { method: 'POST', body: JSON.stringify({ bannerId, times }) }),
+  roll: (bannerId, times) => api.request('https://gachasimtest.onrender.com/api/roll', { method: 'POST', body: JSON.stringify({bannerId, times }) }),
   inventory: () => api.request('https://gachasimtest.onrender.com/api/inventory'),
-  claimDaily: () => api.request('https://gachasimtest.onrender.com/api/claim/daily', { method: 'POST' })
-}
+  claimDaily: () => api.request('https://gachasimtest.onrender.com/api/claim/daily', { method: 'POST' }),
+  adventure: {
+    history: () => api.request('https://gachasimtest.onrender.com/api/adventure/history'),
+    play: party => api.request('https://gachasimtest.onrender.com/api/adventure', {
+      method: 'POST',
+      body: JSON.stringify({ party })
+    })
+  }
+};

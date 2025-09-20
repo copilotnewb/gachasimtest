@@ -350,18 +350,209 @@ function CollectionTracker({ banners, items }) {
   )
 }
 
+function AdventureCard({
+  items,
+  partyIds,
+  onToggle,
+  onClear,
+  onSend,
+  busy,
+  history,
+  chance,
+  cooldown,
+  config
+}) {
+  const itemMap = useMemo(() => new Map(items.map(it => [it.id, it])), [items])
+  const selectedItems = useMemo(() => partyIds.map(id => itemMap.get(id)).filter(Boolean), [partyIds, itemMap])
+  const sortedItems = useMemo(() => {
+    const sorted = [...items]
+    sorted.sort((a, b) => {
+      const rarityDiff = (RARITY_PRIORITY[b.rarity] || 0) - (RARITY_PRIORITY[a.rarity] || 0)
+      if (rarityDiff !== 0) return rarityDiff
+      const timeB = Date.parse(b.obtained_at)
+      const timeA = Date.parse(a.obtained_at)
+      return (timeB || 0) - (timeA || 0)
+    })
+    return sorted
+  }, [items])
+
+  const chancePercent = typeof chance === 'number' ? Math.round(chance * 100) : null
+  const ready = cooldown <= 0
+  const successReward = config?.rewardSuccess ?? 0
+  const failureReward = config?.rewardFailure ?? 0
+
+  const cooldownLabel = useMemo(() => {
+    if (cooldown <= 0) return null
+    const minutes = Math.floor(cooldown / 60)
+    const seconds = cooldown % 60
+    const parts = []
+    if (minutes > 0) parts.push(`${minutes}m`)
+    if (seconds > 0 && minutes < 5) parts.push(`${seconds}s`)
+    return parts.join(' ') || 'soon'
+  }, [cooldown])
+
+  return (
+    <div className="card adventure-card">
+      <div className="row">
+        <h3>Starfall Expedition</h3>
+        <span className="tag">Mini-game</span>
+      </div>
+      <p className="muted">Send up to three relics from your gacha haul to scout the ruins. Higher rarity allies raise your success odds and earn bonus gems.</p>
+      <div className="adventure-party">
+        <div className="row adventure-party-header">
+          <strong>Selected team</strong>
+          <div className="spacer" />
+          <button className="btn secondary adventure-clear" type="button" onClick={onClear} disabled={partyIds.length === 0 || busy}>Clear</button>
+        </div>
+        <div className="adventure-slots">
+          {[0,1,2].map(idx => {
+            const item = selectedItems[idx]
+            return (
+              <div key={idx} className={`adventure-slot ${item ? 'is-filled' : 'is-empty'}`}>
+                {item ? (
+                  <>
+                    <div className={`adventure-slot-name rarity-${item.rarity}`}>{item.name}</div>
+                    <div className="muted">{item.rarity.toUpperCase()}</div>
+                  </>
+                ) : (
+                  <div className="muted">Empty slot</div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      <div className="adventure-actions">
+        <div>
+          <div className="muted adventure-label">Chance</div>
+          <div className="adventure-chance">{chancePercent != null ? `${chancePercent}%` : '—'}</div>
+        </div>
+        <div>
+          <div className="muted adventure-label">Rewards</div>
+          <div className="adventure-rewards">Success +{successReward} • Miss +{failureReward}</div>
+        </div>
+        <div className="spacer" />
+        <button
+          className="btn"
+          type="button"
+          disabled={busy || !ready || selectedItems.length === 0}
+          onClick={onSend}
+        >
+          {ready ? 'Launch Expedition' : 'Party Resting'}
+        </button>
+      </div>
+      {cooldown > 0 ? <div className="toast adventure-cooldown">Crew resting: {cooldownLabel}</div> : null}
+      <div className="adventure-available">
+        <div className="row adventure-available-header">
+          <strong>Available companions</strong>
+          <span className="muted">Tap up to 3</span>
+        </div>
+        <div className="adventure-companions">
+          {sortedItems.length === 0 ? (
+            <div className="muted">Roll the gacha to recruit gear for expeditions.</div>
+          ) : sortedItems.map(it => {
+            const selected = partyIds.includes(it.id)
+            return (
+              <button
+                key={it.id}
+                type="button"
+                className={`adventure-chip ${selected ? 'is-selected' : ''}`}
+                onClick={() => onToggle(it.id)}
+                disabled={busy && !selected}
+              >
+                <span className={`rarity-${it.rarity}`}>{it.name}</span>
+                <span className="adventure-chip-tag">{it.rarity}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <div className="adventure-history">
+        <strong>Recent expeditions</strong>
+        {history.length === 0 ? (
+          <div className="muted">No expeditions yet. Strong pulls dramatically raise your odds.</div>
+        ) : (
+          <ul className="list adventure-history-list">
+            {history.map(entry => (
+              <li key={entry.id}>
+                <div className="adventure-history-entry">
+                  <div className={`adventure-history-result ${entry.success ? 'is-success' : 'is-fail'}`}>
+                    {entry.success ? 'Success' : 'Failed'}
+                  </div>
+                  <div className="adventure-history-detail">
+                    {Math.round(entry.chance * 100)}% chance • +{entry.reward} gems
+                  </div>
+                  <div className="adventure-history-party">
+                    {entry.party.map(p => (
+                      <span key={p.id} className={`rarity-${p.rarity}`}>{p.name}</span>
+                    ))}
+                  </div>
+                </div>
+                <span className="muted adventure-history-time">{new Date(entry.created_at).toLocaleString()}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function Main({ user, setUser, onLogout }) {
   const [banners, setBanners] = useState([])
   const [items, setItems] = useState([])
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
   const [rollShowcase, setRollShowcase] = useState(null)
+  const [adventureParty, setAdventureParty] = useState([])
+  const [adventureHistory, setAdventureHistory] = useState([])
+  const [adventureConfig, setAdventureConfig] = useState(null)
+  const [adventureCooldown, setAdventureCooldown] = useState(0)
+  const [adventureBusy, setAdventureBusy] = useState(false)
+
+  const adventurePartyItems = useMemo(() => {
+    const map = new Map(items.map(it => [it.id, it]))
+    return adventureParty.map(id => map.get(id)).filter(Boolean)
+  }, [items, adventureParty])
+
+  const predictedAdventureChance = useMemo(() => {
+    if (!adventureConfig) return null
+    const rarityScores = adventureConfig.rarityScores || {}
+    const totalScore = adventurePartyItems.reduce((sum, item) => sum + (rarityScores[item.rarity] || 0), 0)
+    const partyBonus = Math.min(adventurePartyItems.length, 3) * (adventureConfig.partyBonus || 0)
+    const rawChance = (adventureConfig.baseChance || 0) + totalScore * (adventureConfig.scoreMultiplier || 0) + partyBonus
+    const maxChance = typeof adventureConfig.maxChance === 'number' ? adventureConfig.maxChance : rawChance
+    return Math.min(maxChance, Math.max(0, rawChance))
+  }, [adventurePartyItems, adventureConfig])
+
+  useEffect(() => {
+    if (adventureCooldown <= 0) return
+    const id = setInterval(() => {
+      setAdventureCooldown(prev => (prev > 0 ? prev - 1 : 0))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [adventureCooldown])
 
   async function loadAll() {
     const [bs, inv, me] = await Promise.all([api.banners(), api.inventory(), api.auth.me()])
     setBanners(bs); setItems(inv); setUser(me);
   }
-  useEffect(() => { loadAll().catch(console.error) }, [])
+
+  async function loadAdventureInfo() {
+    try {
+      const info = await api.adventure.history()
+      setAdventureHistory(Array.isArray(info.history) ? info.history : [])
+      setAdventureConfig(info.config || null)
+      setAdventureCooldown(info.cooldownSeconds || 0)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  useEffect(() => {
+    loadAll().catch(console.error)
+    loadAdventureInfo().catch(console.error)
+  }, [])
 
   async function roll(bannerId, times) {
     setBusy(true); setMsg('')
@@ -370,6 +561,7 @@ function Main({ user, setUser, onLogout }) {
       const r = await api.roll(bannerId, times)
       setRollShowcase({ banner, results: r.results })
       await loadAll()
+      await loadAdventureInfo()
       const rares = r.results.filter(x=>x.rarity!=='common').length
       setMsg(`Spent ${r.totalCost} gems. You rolled ${r.results.length} times and got ${rares} ★★+ items.`)
     } catch (e) {
@@ -387,6 +579,44 @@ function Main({ user, setUser, onLogout }) {
     } catch (e) {
       setMsg(e.message)
     } finally { setBusy(false) }
+  }
+
+  function toggleAdventureItem(id) {
+    setAdventureParty(prev => {
+      if (prev.includes(id)) return prev.filter(x => x !== id)
+      if (prev.length >= 3) return [...prev.slice(1), id]
+      return [...prev, id]
+    })
+  }
+
+  function clearAdventureParty() {
+    setAdventureParty([])
+  }
+
+  async function sendAdventure() {
+    if (adventurePartyItems.length === 0) return
+    setAdventureBusy(true); setMsg('')
+    try {
+      const result = await api.adventure.play(adventureParty)
+      setMsg(result.message)
+      setUser(prev => prev ? { ...prev, gems: result.gems } : prev)
+      if (result.nextAvailableAt) {
+        const diff = Math.ceil((Date.parse(result.nextAvailableAt) - Date.now()) / 1000)
+        if (Number.isFinite(diff) && diff > 0) setAdventureCooldown(diff)
+      } else if (result.cooldownSeconds) {
+        setAdventureCooldown(result.cooldownSeconds)
+      }
+      if (result.entry) {
+        setAdventureHistory(prev => [result.entry, ...prev].slice(0, 10))
+      }
+      await loadAdventureInfo()
+    } catch (e) {
+      setMsg(e.message)
+      const remaining = e?.data?.cooldownSeconds
+      if (typeof remaining === 'number') setAdventureCooldown(remaining)
+    } finally {
+      setAdventureBusy(false)
+    }
   }
 
   return (
@@ -408,6 +638,18 @@ function Main({ user, setUser, onLogout }) {
             <Inventory items={items} />
           </div>
           <div className="stack">
+            <AdventureCard
+              items={items}
+              partyIds={adventureParty}
+              onToggle={toggleAdventureItem}
+              onClear={clearAdventureParty}
+              onSend={sendAdventure}
+              busy={adventureBusy}
+              history={adventureHistory}
+              chance={predictedAdventureChance}
+              cooldown={adventureCooldown}
+              config={adventureConfig}
+            />
             <CollectionTracker banners={banners} items={items} />
             <div className="card">
               <h3>About</h3>
@@ -416,6 +658,7 @@ function Main({ user, setUser, onLogout }) {
                 <li><b>Pity:</b> Rare at 10, Ultra at 90</li>
                 <li><b>Cost:</b> 160 gems per roll (10x = 1440)</li>
                 <li><b>Daily:</b> +100 (manual) and +300 (cron to all users at midnight)</li>
+                <li><b>Expeditions:</b> Send 1-3 items to earn +20 to +60 gems; higher rarity dramatically boosts success chance.</li>
               </ul>
               {msg ? <div className="toast">{msg}</div> : null}
             </div>
