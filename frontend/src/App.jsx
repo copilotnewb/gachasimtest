@@ -41,6 +41,7 @@ function RollAnimationOverlay({ data, onClose }) {
   const windowRef = useRef(null)
   const [distance, setDistance] = useState(0)
   const [playing, setPlaying] = useState(false)
+  const [revealResults, setRevealResults] = useState(false)
 
   const { sequence, focusIndex } = useMemo(() => {
     if (!data) return { sequence: [], focusIndex: 0 }
@@ -64,8 +65,7 @@ function RollAnimationOverlay({ data, onClose }) {
     const sequenceResults = results.map((item, idx) => ({
       ...item,
       key: `result-${item.id || idx}-${idx}`,
-      isResult: true,
-      isFocus: idx === highlightIdx
+      isResult: true
     }))
     const sequence = [...fillerBefore, ...sequenceResults, ...fillerAfter]
     const focusIndex = fillerBefore.length + (sequenceResults.length ? highlightIdx : 0)
@@ -79,6 +79,7 @@ function RollAnimationOverlay({ data, onClose }) {
       return
     }
     setPlaying(false)
+    setRevealResults(false)
     let frame = 0
     let cancelled = false
 
@@ -101,6 +102,9 @@ function RollAnimationOverlay({ data, onClose }) {
     })
 
     window.addEventListener('resize', updateDistance)
+    const revealTimer = setTimeout(() => {
+      if (!cancelled) setRevealResults(true)
+    }, ROLL_ANIMATION_DURATION)
     const timer = setTimeout(() => {
       if (!cancelled) onClose?.()
     }, ROLL_ANIMATION_DURATION + 800)
@@ -109,6 +113,7 @@ function RollAnimationOverlay({ data, onClose }) {
       cancelled = true
       cancelAnimationFrame(frame)
       window.removeEventListener('resize', updateDistance)
+      clearTimeout(revealTimer)
       clearTimeout(timer)
     }
   }, [data, focusIndex, onClose, sequence])
@@ -134,27 +139,34 @@ function RollAnimationOverlay({ data, onClose }) {
             {sequence.map(item => (
               <div
                 key={item.key}
-                className={`roll-card ${item.isResult ? 'is-result' : ''} ${item.isFocus ? 'is-focus' : ''}`}
+                className={`roll-card ${item.isResult ? 'is-result' : ''}`}
               >
-                <div className={`roll-card-name rarity-${item.rarity}`}>{item.name}</div>
-                <div className="roll-card-rarity">{RARITY_STARS[item.rarity] || ''}</div>
+                <div className={`roll-card-name ${item.isResult && !revealResults ? '' : `rarity-${item.rarity}`}`}>
+                  {item.isResult && !revealResults ? '???' : item.name}
+                </div>
+                <div className="roll-card-rarity">
+                  {item.isResult && !revealResults ? '???' : (RARITY_STARS[item.rarity] || '')}
+                </div>
               </div>
             ))}
           </div>
         </div>
         <div className="roll-summary">
           <div className="roll-summary-title">Results</div>
-          <div className="roll-summary-list">
-            {data.results.map((res, idx) => (
-              <span
-                key={res.id || `${res.name}-${idx}`}
-                className={`roll-summary-chip roll-summary-chip-${res.rarity}`}
-              >
-                {res.name}
-              </span>
-            ))}
-          </div>
-          <button className="btn secondary roll-skip-btn" onClick={onClose}>Skip</button>
+          {revealResults ? (
+            <div className="roll-summary-list">
+              {data.results.map((res, idx) => (
+                <span
+                  key={res.id || `${res.name}-${idx}`}
+                  className={`roll-summary-chip roll-summary-chip-${res.rarity}`}
+                >
+                  {res.name}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="muted">Results will reveal after the spin.</div>
+          )}
         </div>
       </div>
     </div>

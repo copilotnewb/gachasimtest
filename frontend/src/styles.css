@@ -167,10 +167,6 @@ a { color: var(--accent); text-decoration: none; }
   background: linear-gradient(180deg, rgba(106,160,255,.2), rgba(158,106,255,.12));
   box-shadow: 0 0 18px rgba(106,160,255,.35), 0 16px 36px rgba(0,0,0,.5);
 }
-.roll-card.is-focus {
-  border-color: rgba(255,214,106,.95);
-  box-shadow: 0 0 22px rgba(255,214,106,.5), 0 0 60px rgba(255,214,106,.35);
-}
 .roll-card-name {
   font-weight: 600;
   font-size: 14px;
@@ -224,13 +220,6 @@ a { color: var(--accent); text-decoration: none; }
   border-color: rgba(255,214,106,.72);
   color: #fff7d6;
   box-shadow: 0 0 18px rgba(255,214,106,.35);
-}
-.roll-skip-btn {
-  justify-self: center;
-  min-width: 140px;
-}
-.roll-skip-btn:hover {
-  border-color: rgba(255,255,255,.28);
 }
 @keyframes ultra-shimmer {
   0% { background-position: 0% 50%; }
