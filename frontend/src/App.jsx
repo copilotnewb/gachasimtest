@@ -114,6 +114,26 @@ function Inventory({ items }) {
   )
 }
 
+function RollAnimation({ onFinished }) {
+  const handleAnimationEnd = (event) => {
+    if (event.target !== event.currentTarget) return
+    onFinished?.()
+  }
+
+  return (
+    <div className="roll-animation" onAnimationEnd={handleAnimationEnd}>
+      <div className="roll-animation__core">
+        <div className="roll-animation__halo" />
+        <div className="roll-animation__ring roll-animation__ring--outer" />
+        <div className="roll-animation__ring roll-animation__ring--inner" />
+        <span className="roll-animation__spark roll-animation__spark--one" />
+        <span className="roll-animation__spark roll-animation__spark--two" />
+        <span className="roll-animation__spark roll-animation__spark--three" />
+      </div>
+    </div>
+  )
+}
+
 function CollectionTracker({ banners, items }) {
   const ownedNames = React.useMemo(() => new Set(items.map(it => it.name)), [items])
   const rarityOrder = ['ultra', 'rare', 'common']
@@ -183,6 +203,8 @@ function Main({ user, setUser, onLogout }) {
   const [items, setItems] = useState([])
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+  const [showRollAnim, setShowRollAnim] = useState(false)
+  const [rollAnimKey, setRollAnimKey] = useState(0)
 
   async function loadAll() {
     const [bs, inv, me] = await Promise.all([api.banners(), api.inventory(), api.auth.me()])
@@ -192,6 +214,8 @@ function Main({ user, setUser, onLogout }) {
 
   async function roll(bannerId, times) {
     setBusy(true); setMsg('')
+    setRollAnimKey(k => k + 1)
+    setShowRollAnim(true)
     try {
       const r = await api.roll(bannerId, times)
       await loadAll()
@@ -215,37 +239,42 @@ function Main({ user, setUser, onLogout }) {
   }
 
   return (
-    <div className="wrap">
-      <Nav user={user} onLogout={onLogout} />
-      <div className="grid" style={{alignItems:'start'}}>
-        <div className="stack">
-          <div className="card">
-            <div className="row">
-              <h3>Summon Banners</h3>
-              <div className="spacer" />
-              <button className="btn secondary" disabled={busy} onClick={claimDaily}>Claim daily (+100)</button>
+    <>
+      <div className="wrap">
+        <Nav user={user} onLogout={onLogout} />
+        <div className="grid" style={{alignItems:'start'}}>
+          <div className="stack">
+            <div className="card">
+              <div className="row">
+                <h3>Summon Banners</h3>
+                <div className="spacer" />
+                <button className="btn secondary" disabled={busy} onClick={claimDaily}>Claim daily (+100)</button>
+              </div>
+              <div className="stack">
+                {banners.map(b => <BannerCard key={b.id} b={b} onRoll={roll} busy={busy} />)}
+              </div>
             </div>
-            <div className="stack">
-              {banners.map(b => <BannerCard key={b.id} b={b} onRoll={roll} busy={busy} />)}
-            </div>
+            <Inventory items={items} />
           </div>
-          <Inventory items={items} />
-        </div>
-        <div className="stack">
-          <CollectionTracker banners={banners} items={items} />
-          <div className="card">
-            <h3>About</h3>
-            <p className="muted">All game logic runs on the backend: RNG, pity, banner rotation, and database writes. The frontend is a thin client.</p>
-            <ul>
-              <li><b>Pity:</b> Rare at 10, Ultra at 90</li>
-              <li><b>Cost:</b> 160 gems per roll (10x = 1440)</li>
-              <li><b>Daily:</b> +100 (manual) and +300 (cron to all users at midnight)</li>
-            </ul>
-            {msg ? <div className="toast">{msg}</div> : null}
+          <div className="stack">
+            <CollectionTracker banners={banners} items={items} />
+            <div className="card">
+              <h3>About</h3>
+              <p className="muted">All game logic runs on the backend: RNG, pity, banner rotation, and database writes. The frontend is a thin client.</p>
+              <ul>
+                <li><b>Pity:</b> Rare at 10, Ultra at 90</li>
+                <li><b>Cost:</b> 160 gems per roll (10x = 1440)</li>
+                <li><b>Daily:</b> +100 (manual) and +300 (cron to all users at midnight)</li>
+              </ul>
+              {msg ? <div className="toast">{msg}</div> : null}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      {showRollAnim ? (
+        <RollAnimation key={rollAnimKey} onFinished={() => setShowRollAnim(false)} />
+      ) : null}
+    </>
   )
 }
 
