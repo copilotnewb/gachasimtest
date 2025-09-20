@@ -1,0 +1,62 @@
+[
+  {
+    "id": "standard",
+    "name": "Standard Banner",
+    "start_at": "2025-09-12T00:00:00.000Z",
+    "end_at": "2025-10-03T23:59:59.000Z",
+    "rates": {
+      "common": 0.8,
+      "rare": 0.18,
+      "ultra": 0.02
+    },
+    "pool": {
+      "common": [
+        "Slime",
+        "Goblin",
+        "Wolf Pup",
+        "Skeleton Archer",
+        "Bandit",
+        "Slingshot"
+      ],
+      "rare": [
+        "Knight Aegis",
+        "Storm Mage",
+        "Shadow Rogue",
+        "Forest Druid"
+      ],
+      "ultra": [
+        "Ancient Dragon",
+        "Phoenix of Dawn"
+      ]
+    },
+    "is_active": true
+  },
+  {
+    "id": "limited",
+    "name": "Limited: Celestial Festival",
+    "start_at": "2025-09-18T00:00:00.000Z",
+    "end_at": "2025-09-25T23:59:59.000Z",
+    "rates": {
+      "common": 0.75,
+      "rare": 0.2,
+      "ultra": 0.05
+    },
+    "pool": {
+      "common": [
+        "Lantern Imp",
+        "Festival Guard",
+        "Paper Crane",
+        "Drum Spirit"
+      ],
+      "rare": [
+        "Moonblade Samurai",
+        "Starseer Oracle"
+      ],
+      "ultra": [
+        "Celestial Kitsune",
+        "Eclipse Dragon"
+      ]
+    },
+    "is_active": true
+  }
+]
