@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { api } from './api.js'
 
 function useAuth() {
@@ -183,14 +183,29 @@ function Main({ user, setUser, onLogout }) {
   const [items, setItems] = useState([])
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+  const [isRolling, setIsRolling] = useState(false)
+  const [rollAnimationKey, setRollAnimationKey] = useState(0)
+  const rollAnimationTimeout = useRef(null)
 
   async function loadAll() {
     const [bs, inv, me] = await Promise.all([api.banners(), api.inventory(), api.auth.me()])
     setBanners(bs); setItems(inv); setUser(me);
   }
   useEffect(() => { loadAll().catch(console.error) }, [])
+  useEffect(() => () => {
+    if (rollAnimationTimeout.current) {
+      clearTimeout(rollAnimationTimeout.current)
+      rollAnimationTimeout.current = null
+    }
+  }, [])
 
   async function roll(bannerId, times) {
+    if (rollAnimationTimeout.current) {
+      clearTimeout(rollAnimationTimeout.current)
+      rollAnimationTimeout.current = null
+    }
+    setRollAnimationKey(k => k + 1)
+    setIsRolling(true)
     setBusy(true); setMsg('')
     try {
       const r = await api.roll(bannerId, times)
@@ -199,7 +214,17 @@ function Main({ user, setUser, onLogout }) {
       setMsg(`Spent ${r.totalCost} gems. You rolled ${r.results.length} times and got ${rares} ★★+ items.`)
     } catch (e) {
       setMsg(e.message)
-    } finally { setBusy(false) }
+    } finally {
+      if (rollAnimationTimeout.current) {
+        clearTimeout(rollAnimationTimeout.current)
+        rollAnimationTimeout.current = null
+      }
+      rollAnimationTimeout.current = setTimeout(() => {
+        setIsRolling(false)
+        rollAnimationTimeout.current = null
+      }, 900)
+      setBusy(false)
+    }
   }
 
   async function claimDaily() {
@@ -215,37 +240,47 @@ function Main({ user, setUser, onLogout }) {
   }
 
   return (
-    <div className="wrap">
-      <Nav user={user} onLogout={onLogout} />
-      <div className="grid" style={{alignItems:'start'}}>
-        <div className="stack">
-          <div className="card">
-            <div className="row">
-              <h3>Summon Banners</h3>
-              <div className="spacer" />
-              <button className="btn secondary" disabled={busy} onClick={claimDaily}>Claim daily (+100)</button>
-            </div>
-            <div className="stack">
-              {banners.map(b => <BannerCard key={b.id} b={b} onRoll={roll} busy={busy} />)}
-            </div>
-          </div>
-          <Inventory items={items} />
+    <>
+      <div key={rollAnimationKey} className={`roll-overlay ${isRolling ? 'is-active' : ''}`}>
+        <div className="roll-overlay__burst" />
+        <div className="roll-overlay__sparkles">
+          <span />
+          <span />
+          <span />
         </div>
-        <div className="stack">
-          <CollectionTracker banners={banners} items={items} />
-          <div className="card">
-            <h3>About</h3>
-            <p className="muted">All game logic runs on the backend: RNG, pity, banner rotation, and database writes. The frontend is a thin client.</p>
-            <ul>
-              <li><b>Pity:</b> Rare at 10, Ultra at 90</li>
-              <li><b>Cost:</b> 160 gems per roll (10x = 1440)</li>
-              <li><b>Daily:</b> +100 (manual) and +300 (cron to all users at midnight)</li>
-            </ul>
-            {msg ? <div className="toast">{msg}</div> : null}
+      </div>
+      <div className="wrap">
+        <Nav user={user} onLogout={onLogout} />
+        <div className="grid" style={{alignItems:'start'}}>
+          <div className="stack">
+            <div className="card">
+              <div className="row">
+                <h3>Summon Banners</h3>
+                <div className="spacer" />
+                <button className="btn secondary" disabled={busy} onClick={claimDaily}>Claim daily (+100)</button>
+              </div>
+              <div className="stack">
+                {banners.map(b => <BannerCard key={b.id} b={b} onRoll={roll} busy={busy} />)}
+              </div>
+            </div>
+            <Inventory items={items} />
+          </div>
+          <div className="stack">
+            <CollectionTracker banners={banners} items={items} />
+            <div className="card">
+              <h3>About</h3>
+              <p className="muted">All game logic runs on the backend: RNG, pity, banner rotation, and database writes. The frontend is a thin client.</p>
+              <ul>
+                <li><b>Pity:</b> Rare at 10, Ultra at 90</li>
+                <li><b>Cost:</b> 160 gems per roll (10x = 1440)</li>
+                <li><b>Daily:</b> +100 (manual) and +300 (cron to all users at midnight)</li>
+              </ul>
+              {msg ? <div className="toast">{msg}</div> : null}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 
