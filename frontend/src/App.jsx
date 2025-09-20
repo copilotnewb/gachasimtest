@@ -186,6 +186,7 @@ function Main({ user, setUser, onLogout }) {
   const [isRolling, setIsRolling] = useState(false)
   const [rollAnimationKey, setRollAnimationKey] = useState(0)
   const rollAnimationTimeout = useRef(null)
+  const pendingRollSummary = useRef('')
 
   async function loadAll() {
     const [bs, inv, me] = await Promise.all([api.banners(), api.inventory(), api.auth.me()])
@@ -206,15 +207,12 @@ function Main({ user, setUser, onLogout }) {
     }
     setRollAnimationKey(k => k + 1)
     setIsRolling(true)
+    pendingRollSummary.current = ''
     setBusy(true); setMsg('')
     try {
       const r = await api.roll(bannerId, times)
-      await loadAll()
       const rares = r.results.filter(x=>x.rarity!=='common').length
-      setMsg(`Spent ${r.totalCost} gems. You rolled ${r.results.length} times and got ${rares} ★★+ items.`)
-    } catch (e) {
-      setMsg(e.message)
-    } finally {
+      pendingRollSummary.current = `Spent ${r.totalCost} gems. You rolled ${r.results.length} times and got ${rares} ★★+ items.`
       if (rollAnimationTimeout.current) {
         clearTimeout(rollAnimationTimeout.current)
         rollAnimationTimeout.current = null
@@ -222,8 +220,26 @@ function Main({ user, setUser, onLogout }) {
       rollAnimationTimeout.current = setTimeout(() => {
         setIsRolling(false)
         rollAnimationTimeout.current = null
+        const finalize = async () => {
+          try {
+            await loadAll()
+            if (pendingRollSummary.current) {
+              setMsg(pendingRollSummary.current)
+            }
+          } catch (err) {
+            console.error(err)
+            setMsg(err.message || 'Failed to refresh data after roll.')
+          } finally {
+            pendingRollSummary.current = ''
+            setBusy(false)
+          }
+        }
+        finalize()
       }, 900)
+    } catch (e) {
+      setIsRolling(false)
       setBusy(false)
+      setMsg(e.message)
     }
   }
 
