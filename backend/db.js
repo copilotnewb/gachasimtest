@@ -48,6 +48,17 @@ db.exec(`
     created_at TEXT NOT NULL,
     FOREIGN KEY(user_id) REFERENCES users(id)
   );
+  CREATE TABLE IF NOT EXISTS adventures (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    success INTEGER NOT NULL,
+    reward INTEGER NOT NULL,
+    chance REAL NOT NULL,
+    summary TEXT NOT NULL,
+    party_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
 `);
 
 export default db;
