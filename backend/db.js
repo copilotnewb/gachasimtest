@@ -19,7 +19,9 @@ db.exec(`
     gems INTEGER NOT NULL DEFAULT 0,
     pity_rare INTEGER NOT NULL DEFAULT 0,
     pity_ultra INTEGER NOT NULL DEFAULT 0,
-    last_daily_claim TEXT
+    last_daily_claim TEXT,
+    last_adventure_at TEXT,
+    best_adventure_score INTEGER NOT NULL DEFAULT 0
   );
   CREATE TABLE IF NOT EXISTS items (
     id TEXT PRIMARY KEY,
@@ -49,5 +51,15 @@ db.exec(`
     FOREIGN KEY(user_id) REFERENCES users(id)
   );
 `);
+
+const userColumns = db.prepare('PRAGMA table_info(users)').all();
+const hasLastAdventure = userColumns.some(col => col.name === 'last_adventure_at');
+if (!hasLastAdventure) {
+  db.prepare('ALTER TABLE users ADD COLUMN last_adventure_at TEXT').run();
+}
+const hasBestScore = userColumns.some(col => col.name === 'best_adventure_score');
+if (!hasBestScore) {
+  db.prepare('ALTER TABLE users ADD COLUMN best_adventure_score INTEGER NOT NULL DEFAULT 0').run();
+}
 
 export default db;

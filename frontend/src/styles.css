@@ -221,6 +221,101 @@ a { color: var(--accent); text-decoration: none; }
   color: #fff7d6;
   box-shadow: 0 0 18px rgba(255,214,106,.35);
 }
+.adventure-card {
+  background: radial-gradient(480px 320px at 20% 0%, rgba(106,160,255,.16), transparent),
+    radial-gradient(520px 360px at 90% 0%, rgba(158,106,255,.18), transparent),
+    linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  border: 1px solid rgba(120,140,220,.18);
+  overflow: hidden;
+}
+.adventure-featured {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: rgba(9,12,20,.55);
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.06);
+}
+.adventure-featured-name {
+  font-weight: 600;
+  font-size: 16px;
+}
+.adventure-scene {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.12);
+  background: radial-gradient(900px 480px at 50% -30%, rgba(66,81,130,.35), rgba(9,11,19,.92));
+  box-shadow: 0 26px 48px rgba(0,0,0,.55);
+  margin: 18px 0 14px;
+}
+.adventure-canvas {
+  width: 100%;
+  display: block;
+  min-height: 220px;
+}
+.adventure-hud {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 14px;
+  pointer-events: none;
+}
+.adventure-meter {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.adventure-meter > div {
+  background: rgba(9,11,19,.62);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  padding: 8px 10px;
+  min-width: 78px;
+  box-shadow: 0 10px 22px rgba(0,0,0,.35);
+}
+.hud-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: rgba(226,233,255,.62);
+}
+.hud-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f1f5ff;
+}
+.adventure-controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  pointer-events: auto;
+}
+.btn.circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 20px;
+  box-shadow: 0 14px 26px rgba(0,0,0,.4);
+}
+.btn.circle[disabled] {
+  opacity: .45;
+  box-shadow: none;
+}
+.adventure-status {
+  min-height: 24px;
+  font-weight: 500;
+  margin-top: -4px;
+  margin-bottom: 8px;
+}
 @keyframes ultra-shimmer {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
