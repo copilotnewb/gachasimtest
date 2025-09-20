@@ -30,7 +30,41 @@ a { color: var(--accent); text-decoration: none; }
 .banner { background: radial-gradient(400px 200px at 20% 0%, rgba(106,160,255,.2), transparent), radial-gradient(400px 200px at 80% 100%, rgba(158,106,255,.2), transparent); padding: 18px; border-radius: var(--radius); border: 1px dashed rgba(255,255,255,.1); }
 .rarity-common { color: #c0cadb; }
 .rarity-rare { color: #70d9ff; }
-.rarity-ultra { color: #ffd66a; text-shadow: 0 0 10px rgba(255,214,106,.4); }
+.rarity-ultra {
+  position: relative;
+  display: inline-block;
+  font-weight: 700;
+  background: linear-gradient(120deg, #ffe37a, #fff7d0 45%, #ffd66a 65%, #fff2a8);
+  background-size: 220% 220%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 12px rgba(255, 220, 130, .65), 0 0 28px rgba(255, 200, 92, .45);
+  animation: ultra-shimmer 3.6s ease-in-out infinite;
+}
+.rarity-ultra::before,
+.rarity-ultra::after {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  color: #fff9e6;
+  text-shadow: 0 0 8px rgba(255, 255, 255, .8);
+}
+.rarity-ultra::before {
+  content: '✶';
+  top: -0.55em;
+  right: -0.85em;
+  font-size: 0.9em;
+  animation: ultra-twinkle 3s ease-in-out infinite;
+}
+.rarity-ultra::after {
+  content: '✷';
+  bottom: -0.6em;
+  left: -0.9em;
+  font-size: 0.85em;
+  animation: ultra-twinkle 3.4s ease-in-out infinite reverse;
+}
 .list { list-style: none; padding: 0; margin: 0; }
 .list li { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
 .toast { margin-top: 10px; }
@@ -44,3 +78,167 @@ a { color: var(--accent); text-decoration: none; }
 .collection-item.is-missing { opacity: .65; }
 .tag-owned { color: var(--good); border-color: rgba(79,211,141,.6); background: rgba(79,211,141,.12); }
 .tag-missing { color: var(--bad); border-color: rgba(255,106,106,.6); background: rgba(255,106,106,.12); }
+.roll-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: radial-gradient(900px 600px at 50% 12%, rgba(32, 37, 56, .95), rgba(8, 10, 18, .94));
+  backdrop-filter: blur(6px);
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  padding: 28px 18px;
+}
+.roll-overlay-inner {
+  width: min(720px, 100%);
+  display: grid;
+  gap: 24px;
+  text-align: center;
+}
+.roll-header h2 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: .05em;
+}
+.roll-window {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: linear-gradient(180deg, rgba(22,26,38,.92), rgba(11,13,20,.94));
+  padding: 26px 0;
+  box-shadow: 0 24px 60px rgba(0,0,0,.55);
+}
+.roll-marker {
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 50%;
+  width: 3px;
+  margin-left: -1.5px;
+  background: linear-gradient(180deg, transparent, rgba(255,214,106,.92), transparent);
+  box-shadow: 0 0 18px rgba(255,214,106,.55);
+  pointer-events: none;
+}
+.roll-marker::before,
+.roll-marker::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  margin-left: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255,214,106,.95);
+  box-shadow: 0 0 12px rgba(255,214,106,.8);
+}
+.roll-marker::before { top: -6px; }
+.roll-marker::after { bottom: -6px; }
+.roll-track {
+  --roll-distance: 0px;
+  display: flex;
+  gap: 16px;
+  padding: 0;
+  will-change: transform;
+  transform: translateX(0);
+}
+.roll-track.is-running {
+  animation: roll-slide var(--roll-duration, 4200ms) cubic-bezier(.12, .65, .3, 1) forwards;
+}
+@keyframes roll-slide {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-1 * var(--roll-distance, 0px))); }
+}
+.roll-card {
+  flex: 0 0 auto;
+  width: 120px;
+  min-height: 130px;
+  padding: 16px 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.02));
+  box-shadow: 0 14px 28px rgba(0,0,0,.4);
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+.roll-card.is-result {
+  border-color: rgba(106,160,255,.58);
+  background: linear-gradient(180deg, rgba(106,160,255,.2), rgba(158,106,255,.12));
+  box-shadow: 0 0 18px rgba(106,160,255,.35), 0 16px 36px rgba(0,0,0,.5);
+}
+.roll-card.is-focus {
+  border-color: rgba(255,214,106,.95);
+  box-shadow: 0 0 22px rgba(255,214,106,.5), 0 0 60px rgba(255,214,106,.35);
+}
+.roll-card-name {
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.3;
+}
+.roll-card-rarity {
+  font-size: 13px;
+  letter-spacing: .12em;
+  color: rgba(255,255,255,.68);
+}
+.roll-summary {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+.roll-summary-title {
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-size: 13px;
+  color: rgba(255,255,255,.7);
+}
+.roll-summary-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.roll-summary-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.05);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  box-shadow: 0 8px 18px rgba(0,0,0,.28);
+}
+.roll-summary-chip-common {
+  background: rgba(192,202,219,.14);
+  border-color: rgba(192,202,219,.35);
+  color: #e1e7f2;
+}
+.roll-summary-chip-rare {
+  background: rgba(112,217,255,.18);
+  border-color: rgba(112,217,255,.45);
+  color: #e4f9ff;
+}
+.roll-summary-chip-ultra {
+  background: rgba(255,214,106,.24);
+  border-color: rgba(255,214,106,.72);
+  color: #fff7d6;
+  box-shadow: 0 0 18px rgba(255,214,106,.35);
+}
+.roll-skip-btn {
+  justify-self: center;
+  min-width: 140px;
+}
+.roll-skip-btn:hover {
+  border-color: rgba(255,255,255,.28);
+}
+@keyframes ultra-shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes ultra-twinkle {
+  0%, 70%, 100% { opacity: 0; transform: scale(.4) rotate(0deg); }
+  35% { opacity: .95; transform: scale(1.05) rotate(18deg); }
+  45% { opacity: 0; transform: scale(.4) rotate(-10deg); }
+}

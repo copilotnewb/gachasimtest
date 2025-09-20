@@ -1,5 +1,165 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from './api.js'
+
+const ROLL_ANIMATION_DURATION = 4200
+const ROLL_CARD_WIDTH = 120
+const ROLL_CARD_GAP = 16
+const ROLL_FILLER_FALLBACK_NAMES = [
+  'Lucky Trinket',
+  'Mystic Token',
+  'Spark Capsule',
+  'Aether Relic',
+  'Aurora Charm',
+  'Nebula Prism',
+  'Fortune Sigil'
+]
+const ROLL_FILLER_RARITIES = ['common', 'common', 'common', 'rare', 'rare', 'ultra']
+const RARITY_STARS = { common: '★', rare: '★★', ultra: '★★★' }
+const RARITY_PRIORITY = { common: 1, rare: 2, ultra: 3 }
+
+function createFillerItems(banner, count, offset = 0) {
+  const pool = banner?.pool || {}
+  const filler = []
+  for (let i = 0; i < count; i++) {
+    const rarity = ROLL_FILLER_RARITIES[Math.floor(Math.random() * ROLL_FILLER_RARITIES.length)]
+    const names = Array.isArray(pool[rarity]) ? pool[rarity] : []
+    const fallback = ROLL_FILLER_FALLBACK_NAMES[(offset + i) % ROLL_FILLER_FALLBACK_NAMES.length]
+    const variation = ((offset + i) % 3) + 1
+    const fallbackName = `${fallback} #${variation}`
+    const name = names.length ? names[Math.floor(Math.random() * names.length)] : fallbackName
+    filler.push({
+      key: `filler-${offset + i}`,
+      name,
+      rarity,
+      isResult: false
+    })
+  }
+  return filler
+}
+
+function RollAnimationOverlay({ data, onClose }) {
+  const windowRef = useRef(null)
+  const [distance, setDistance] = useState(0)
+  const [playing, setPlaying] = useState(false)
+
+  const { sequence, focusIndex } = useMemo(() => {
+    if (!data) return { sequence: [], focusIndex: 0 }
+    const results = Array.isArray(data.results) ? data.results : []
+    const fillerBeforeCount = Math.max(18, results.length * 6)
+    const fillerAfterCount = Math.max(10, Math.ceil(results.length * 2.5))
+    const fillerBefore = createFillerItems(data.banner, fillerBeforeCount, 0)
+    const fillerAfter = createFillerItems(data.banner, fillerAfterCount, fillerBeforeCount)
+    let highlightIdx = results.length ? 0 : -1
+    if (results.length) {
+      highlightIdx = results.reduce((bestIdx, item, idx) => {
+        if (bestIdx === -1) return idx
+        const currentScore = RARITY_PRIORITY[item.rarity] || 0
+        const bestScore = RARITY_PRIORITY[results[bestIdx].rarity] || 0
+        if (currentScore > bestScore) return idx
+        if (currentScore === bestScore && idx > bestIdx) return idx
+        return bestIdx
+      }, -1)
+      if (highlightIdx < 0) highlightIdx = results.length - 1
+    }
+    const sequenceResults = results.map((item, idx) => ({
+      ...item,
+      key: `result-${item.id || idx}-${idx}`,
+      isResult: true,
+      isFocus: idx === highlightIdx
+    }))
+    const sequence = [...fillerBefore, ...sequenceResults, ...fillerAfter]
+    const focusIndex = fillerBefore.length + (sequenceResults.length ? highlightIdx : 0)
+    return { sequence, focusIndex }
+  }, [data])
+
+  useEffect(() => {
+    if (!data || !sequence.length) {
+      setDistance(0)
+      setPlaying(false)
+      return
+    }
+    setPlaying(false)
+    let frame = 0
+    let cancelled = false
+
+    const updateDistance = () => {
+      const windowEl = windowRef.current
+      if (!windowEl) return
+      const windowWidth = windowEl.clientWidth
+      const trackWidth =
+        sequence.length * ROLL_CARD_WIDTH + Math.max(0, sequence.length - 1) * ROLL_CARD_GAP
+      const target =
+        focusIndex * (ROLL_CARD_WIDTH + ROLL_CARD_GAP) - (windowWidth - ROLL_CARD_WIDTH) / 2
+      const maxOffset = Math.max(0, trackWidth - windowWidth)
+      const nextDistance = Math.max(0, Math.min(target, maxOffset))
+      setDistance(nextDistance)
+    }
+
+    updateDistance()
+    frame = requestAnimationFrame(() => {
+      if (!cancelled) setPlaying(true)
+    })
+
+    window.addEventListener('resize', updateDistance)
+    const timer = setTimeout(() => {
+      if (!cancelled) onClose?.()
+    }, ROLL_ANIMATION_DURATION + 800)
+
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(frame)
+      window.removeEventListener('resize', updateDistance)
+      clearTimeout(timer)
+    }
+  }, [data, focusIndex, onClose, sequence])
+
+  if (!data || !sequence.length) return null
+
+  return (
+    <div className="roll-overlay">
+      <div className="roll-overlay-inner">
+        <div className="roll-header">
+          <h2>Rolling…</h2>
+          {data.banner?.name ? <div className="muted">Banner: {data.banner.name}</div> : null}
+        </div>
+        <div className="roll-window" ref={windowRef}>
+          <div className="roll-marker" aria-hidden="true" />
+          <div
+            className={`roll-track ${playing ? 'is-running' : ''}`}
+            style={{
+              '--roll-distance': `${distance}px`,
+              '--roll-duration': `${ROLL_ANIMATION_DURATION}ms`
+            }}
+          >
+            {sequence.map(item => (
+              <div
+                key={item.key}
+                className={`roll-card ${item.isResult ? 'is-result' : ''} ${item.isFocus ? 'is-focus' : ''}`}
+              >
+                <div className={`roll-card-name rarity-${item.rarity}`}>{item.name}</div>
+                <div className="roll-card-rarity">{RARITY_STARS[item.rarity] || ''}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="roll-summary">
+          <div className="roll-summary-title">Results</div>
+          <div className="roll-summary-list">
+            {data.results.map((res, idx) => (
+              <span
+                key={res.id || `${res.name}-${idx}`}
+                className={`roll-summary-chip roll-summary-chip-${res.rarity}`}
+              >
+                {res.name}
+              </span>
+            ))}
+          </div>
+          <button className="btn secondary roll-skip-btn" onClick={onClose}>Skip</button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function useAuth() {
   const [user, setUser] = useState(null)
@@ -115,7 +275,7 @@ function Inventory({ items }) {
 }
 
 function CollectionTracker({ banners, items }) {
-  const ownedNames = React.useMemo(() => new Set(items.map(it => it.name)), [items])
+  const ownedNames = useMemo(() => new Set(items.map(it => it.name)), [items])
   const rarityOrder = ['ultra', 'rare', 'common']
   const rarityLabels = {
     common: 'Common ★',
@@ -183,6 +343,7 @@ function Main({ user, setUser, onLogout }) {
   const [items, setItems] = useState([])
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
+  const [rollShowcase, setRollShowcase] = useState(null)
 
   async function loadAll() {
     const [bs, inv, me] = await Promise.all([api.banners(), api.inventory(), api.auth.me()])
@@ -193,7 +354,9 @@ function Main({ user, setUser, onLogout }) {
   async function roll(bannerId, times) {
     setBusy(true); setMsg('')
     try {
+      const banner = banners.find(b => b.id === bannerId) || null
       const r = await api.roll(bannerId, times)
+      setRollShowcase({ banner, results: r.results })
       await loadAll()
       const rares = r.results.filter(x=>x.rarity!=='common').length
       setMsg(`Spent ${r.totalCost} gems. You rolled ${r.results.length} times and got ${rares} ★★+ items.`)
@@ -215,37 +378,40 @@ function Main({ user, setUser, onLogout }) {
   }
 
   return (
-    <div className="wrap">
-      <Nav user={user} onLogout={onLogout} />
-      <div className="grid" style={{alignItems:'start'}}>
-        <div className="stack">
-          <div className="card">
-            <div className="row">
-              <h3>Summon Banners</h3>
-              <div className="spacer" />
-              <button className="btn secondary" disabled={busy} onClick={claimDaily}>Claim daily (+100)</button>
+    <>
+      <div className="wrap">
+        <Nav user={user} onLogout={onLogout} />
+        <div className="grid" style={{alignItems:'start'}}>
+          <div className="stack">
+            <div className="card">
+              <div className="row">
+                <h3>Summon Banners</h3>
+                <div className="spacer" />
+                <button className="btn secondary" disabled={busy} onClick={claimDaily}>Claim daily (+100)</button>
+              </div>
+              <div className="stack">
+                {banners.map(b => <BannerCard key={b.id} b={b} onRoll={roll} busy={busy} />)}
+              </div>
             </div>
-            <div className="stack">
-              {banners.map(b => <BannerCard key={b.id} b={b} onRoll={roll} busy={busy} />)}
-            </div>
+            <Inventory items={items} />
           </div>
-          <Inventory items={items} />
-        </div>
-        <div className="stack">
-          <CollectionTracker banners={banners} items={items} />
-          <div className="card">
-            <h3>About</h3>
-            <p className="muted">All game logic runs on the backend: RNG, pity, banner rotation, and database writes. The frontend is a thin client.</p>
-            <ul>
-              <li><b>Pity:</b> Rare at 10, Ultra at 90</li>
-              <li><b>Cost:</b> 160 gems per roll (10x = 1440)</li>
-              <li><b>Daily:</b> +100 (manual) and +300 (cron to all users at midnight)</li>
-            </ul>
-            {msg ? <div className="toast">{msg}</div> : null}
+          <div className="stack">
+            <CollectionTracker banners={banners} items={items} />
+            <div className="card">
+              <h3>About</h3>
+              <p className="muted">All game logic runs on the backend: RNG, pity, banner rotation, and database writes. The frontend is a thin client.</p>
+              <ul>
+                <li><b>Pity:</b> Rare at 10, Ultra at 90</li>
+                <li><b>Cost:</b> 160 gems per roll (10x = 1440)</li>
+                <li><b>Daily:</b> +100 (manual) and +300 (cron to all users at midnight)</li>
+              </ul>
+              {msg ? <div className="toast">{msg}</div> : null}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      {rollShowcase ? <RollAnimationOverlay data={rollShowcase} onClose={() => setRollShowcase(null)} /> : null}
+    </>
   )
 }
 
