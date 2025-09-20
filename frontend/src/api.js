@@ -15,12 +15,12 @@ export const api = {
     return res.json();
   },
   auth: {
-    register: (u,p) => api.request('/api/auth/register', { method: 'POST', body: JSON.stringify({ username:u, password:p }) }),
-    login: (u,p) => api.request('/api/auth/login', { method: 'POST', body: JSON.stringify({ username:u, password:p }) }),
-    me: () => api.request('/api/me')
+    register: (u,p) => api.request('https://gachasimtest.onrender.com/api/auth/register', { method: 'POST', body: JSON.stringify({ username:u, password:p }) }),
+    login: (u,p) => api.request('https://gachasimtest.onrender.com/api/auth/login', { method: 'POST', body: JSON.stringify({ username:u, password:p }) }),
+    me: () => api.request('https://gachasimtest.onrender.com/api/me')
   },
-  banners: () => api.request('/api/banners'),
-  roll: (bannerId, times) => api.request('/api/roll', { method: 'POST', body: JSON.stringify({ bannerId, times }) }),
-  inventory: () => api.request('/api/inventory'),
-  claimDaily: () => api.request('/api/claim/daily', { method: 'POST' })
+  banners: () => api.request('https://gachasimtest.onrender.com/api/banners'),
+  roll: (bannerId, times) => api.request('https://gachasimtest.onrender.com/api/roll', { method: 'POST', body: JSON.stringify({ bannerId, times }) }),
+  inventory: () => api.request('https://gachasimtest.onrender.com/api/inventory'),
+  claimDaily: () => api.request('https://gachasimtest.onrender.com/api/claim/daily', { method: 'POST' })
 }
