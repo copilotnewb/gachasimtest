@@ -78,6 +78,130 @@ a { color: var(--accent); text-decoration: none; }
 .collection-item.is-missing { opacity: .65; }
 .tag-owned { color: var(--good); border-color: rgba(79,211,141,.6); background: rgba(79,211,141,.12); }
 .tag-missing { color: var(--bad); border-color: rgba(255,106,106,.6); background: rgba(255,106,106,.12); }
+.game-card { position: relative; overflow: hidden; }
+.game-card-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin: 16px 0; }
+.game-card-number { display: block; font-size: 26px; font-weight: 700; color: white; }
+.game-card-items { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.rarity-chip { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.12); font-size: 12px; }
+.game-card::after {
+  content: '';
+  position: absolute;
+  inset: -20% -30% auto;
+  height: 160px;
+  background: linear-gradient(135deg, rgba(110,160,255,.25), rgba(158,106,255,.18));
+  filter: blur(40px);
+  opacity: .8;
+  pointer-events: none;
+}
+.game-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(1200px 800px at 50% 0%, rgba(8, 12, 22, .96), rgba(4, 6, 15, .92));
+}
+.game-canvas {
+  width: min(1200px, 100vw);
+  height: min(720px, 100vh);
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: radial-gradient(circle at 50% 30%, rgba(24,34,58,.6), rgba(8,10,18,1));
+  box-shadow: 0 40px 120px rgba(0,0,0,.55);
+}
+.game-hud {
+  position: absolute;
+  top: 24px;
+  left: 36px;
+  right: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  font-family: 'Rajdhani', 'Orbitron', var(--font, inherit);
+}
+.hud-left { display: grid; gap: 4px; }
+.hud-right { display: flex; gap: 10px; align-items: center; }
+.hud-title { font-size: 20px; letter-spacing: .18em; text-transform: uppercase; color: rgba(196,210,255,.9); }
+.hud-sub { font-size: 14px; text-transform: uppercase; letter-spacing: .1em; color: rgba(153,176,230,.85); }
+.hud-sub span { color: white; margin-left: 6px; font-size: 18px; }
+.hud-badge {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(130,160,255,.45);
+  background: rgba(28,34,52,.6);
+  color: rgba(207,220,255,.9);
+  font-size: 13px;
+  letter-spacing: .08em;
+}
+.game-close {
+  position: absolute;
+  top: 24px;
+  right: 32px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(12,16,28,.72);
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+  letter-spacing: .08em;
+  box-shadow: 0 14px 40px rgba(0,0,0,.35);
+}
+.game-announcement {
+  position: absolute;
+  top: 86px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgba(255,214,106,.18);
+  border: 1px solid rgba(255,214,106,.5);
+  color: #ffe37a;
+  font-size: 13px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  pointer-events: none;
+  box-shadow: 0 18px 38px rgba(0,0,0,.35);
+}
+.game-loadout {
+  position: absolute;
+  bottom: 32px;
+  left: 32px;
+  width: min(360px, 90vw);
+  background: rgba(8, 11, 22, .78);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 18px;
+  padding: 16px 18px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 24px 60px rgba(0,0,0,.45);
+}
+.game-loadout h4 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(190,204,255,.92);
+}
+.game-loadout ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; max-height: 180px; overflow-y: auto; }
+.game-loadout li { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+.game-loadout-summary { display: flex; gap: 10px; margin-top: 12px; font-size: 12px; letter-spacing: .08em; color: rgba(160,180,230,.9); }
+.game-modal {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 4, 10, .74);
+  backdrop-filter: blur(12px);
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  padding: 24px;
+  text-align: center;
+}
+.game-modal h2 { margin-top: 0; letter-spacing: .12em; text-transform: uppercase; }
+.game-modal ul { text-align: left; display: grid; gap: 6px; }
+.game-modal p { max-width: 520px; }
 .roll-overlay {
   position: fixed;
   inset: 0;
