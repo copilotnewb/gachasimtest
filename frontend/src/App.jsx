@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from './api.js'
+import GachaGame from './GachaGame.jsx'
 
 const ROLL_ANIMATION_DURATION = 4200
 const ROLL_CARD_WIDTH = 120
@@ -356,6 +357,25 @@ function Main({ user, setUser, onLogout }) {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
   const [rollShowcase, setRollShowcase] = useState(null)
+  const [gameOpen, setGameOpen] = useState(false)
+  const [gameSession, setGameSession] = useState(0)
+
+  const rarityCounts = useMemo(() => {
+    const counts = { common: 0, rare: 0, ultra: 0 }
+    for (const item of items) {
+      const rarity = item?.rarity || 'common'
+      counts[rarity] = (counts[rarity] || 0) + 1
+    }
+    return counts
+  }, [items])
+
+  const totalItems = items.length
+  const startArcade = () => {
+    if (gameOpen) return
+    setGameSession(s => s + 1)
+    setGameOpen(true)
+  }
+  const closeArcade = () => setGameOpen(false)
 
   async function loadAll() {
     const [bs, inv, me] = await Promise.all([api.banners(), api.inventory(), api.auth.me()])
@@ -395,6 +415,36 @@ function Main({ user, setUser, onLogout }) {
         <Nav user={user} onLogout={onLogout} />
         <div className="grid" style={{alignItems:'start'}}>
           <div className="stack">
+            <div className="card card-arcade">
+              <div className="row card-arcade-header">
+                <div>
+                  <h3>Neon Drift Arcade</h3>
+                  <p className="muted card-arcade-subtitle">Run, dodge, and unleash your summons in a 3D obstacle sprint.</p>
+                </div>
+                <div className="spacer" />
+                <button className="btn" onClick={startArcade} disabled={gameOpen}>
+                  {gameOpen ? 'Game running…' : 'Launch 3D run'}
+                </button>
+              </div>
+              <div className="card-arcade-body">
+                <div className="card-arcade-stat-block">
+                  <div>
+                    <div className="card-arcade-stat-number">{totalItems.toLocaleString()}</div>
+                    <div className="muted">summons on deck</div>
+                  </div>
+                  <div className="card-arcade-rarity">
+                    <span className="rarity-common">{rarityCounts.common} ★</span>
+                    <span className="rarity-rare">{rarityCounts.rare} ★★</span>
+                    <span className="rarity-ultra">{rarityCounts.ultra} ★★★</span>
+                  </div>
+                </div>
+                <ul className="card-arcade-list muted">
+                  <li>Summons orbit your runner as support drones.</li>
+                  <li>Collect luminous shards, dodge barriers, and press <kbd>SPACE</kbd> to trigger Nova Bursts.</li>
+                  <li>{totalItems ? 'Each burst consumes the next item in your inventory.' : 'No pulls yet? We will loan you a starter squad so you can still play.'}</li>
+                </ul>
+              </div>
+            </div>
             <div className="card">
               <div className="row">
                 <h3>Summon Banners</h3>
@@ -423,6 +473,7 @@ function Main({ user, setUser, onLogout }) {
         </div>
       </div>
       {rollShowcase ? <RollAnimationOverlay data={rollShowcase} onClose={() => setRollShowcase(null)} /> : null}
+      {gameOpen ? <GachaGame key={gameSession} items={items} onClose={closeArcade} /> : null}
     </>
   )
 }
