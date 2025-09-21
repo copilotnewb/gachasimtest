@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from './api.js'
+import StarfallGame from './StarfallGame.jsx'
 
 const ROLL_ANIMATION_DURATION = 4200
 const ROLL_CARD_WIDTH = 120
@@ -350,12 +351,78 @@ function CollectionTracker({ banners, items }) {
   )
 }
 
+function ArcadeCard({ items, onLaunch }) {
+  const preview = useMemo(() => {
+    if (!items || items.length === 0) {
+      return {
+        squad: [{ id: 'training', name: 'Training Drone', rarity: 'common' }],
+        counts: { common: 0, rare: 0, ultra: 0 }
+      }
+    }
+    const order = { ultra: 3, rare: 2, common: 1 }
+    const sorted = [...items].sort((a, b) => {
+      const diff = (order[b.rarity] || 0) - (order[a.rarity] || 0)
+      if (diff !== 0) return diff
+      return new Date(a.obtained_at).getTime() - new Date(b.obtained_at).getTime()
+    })
+    const squad = sorted.slice(0, 6)
+    const counts = sorted.slice(0, 50).reduce(
+      (acc, item) => {
+        acc[item.rarity] = (acc[item.rarity] || 0) + 1
+        return acc
+      },
+      { common: 0, rare: 0, ultra: 0 }
+    )
+    return { squad, counts }
+  }, [items])
+
+  return (
+    <div className="card game-card">
+      <div className="row">
+        <h3>Arcade: Starfall Trials</h3>
+        <span className="tag">3D</span>
+      </div>
+      <p className="muted">
+        Take your summoned roster for a spin in a browser-based 3D gauntlet. Companions orbit your ship and fire automatically; rarities boost damage, cadence, and shields.
+      </p>
+      <div className="game-card-summary">
+        <div>
+          <span className="game-card-number">{preview.counts.ultra}</span>
+          <span className="muted">Ultra relics</span>
+        </div>
+        <div>
+          <span className="game-card-number">{preview.counts.rare}</span>
+          <span className="muted">Rare wisps</span>
+        </div>
+        <div>
+          <span className="game-card-number">{preview.counts.common}</span>
+          <span className="muted">Support sprites</span>
+        </div>
+      </div>
+      <div className="game-card-loadout">
+        <div className="muted" style={{ fontSize: 12, letterSpacing: '.08em', textTransform: 'uppercase' }}>
+          Current squad sample
+        </div>
+        <div className="game-card-items">
+          {preview.squad.map(member => (
+            <span key={member.id} className={`tag rarity-chip rarity-${member.rarity}`}>
+              {member.name}
+            </span>
+          ))}
+        </div>
+      </div>
+      <button className="btn" onClick={onLaunch}>Launch 3D game</button>
+    </div>
+  )
+}
+
 function Main({ user, setUser, onLogout }) {
   const [banners, setBanners] = useState([])
   const [items, setItems] = useState([])
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
   const [rollShowcase, setRollShowcase] = useState(null)
+  const [gameOpen, setGameOpen] = useState(false)
 
   async function loadAll() {
     const [bs, inv, me] = await Promise.all([api.banners(), api.inventory(), api.auth.me()])
@@ -409,6 +476,7 @@ function Main({ user, setUser, onLogout }) {
           </div>
           <div className="stack">
             <CollectionTracker banners={banners} items={items} />
+            <ArcadeCard items={items} onLaunch={() => setGameOpen(true)} />
             <div className="card">
               <h3>About</h3>
               <p className="muted">All game logic runs on the backend: RNG, pity, banner rotation, and database writes. The frontend is a thin client.</p>
@@ -423,6 +491,7 @@ function Main({ user, setUser, onLogout }) {
         </div>
       </div>
       {rollShowcase ? <RollAnimationOverlay data={rollShowcase} onClose={() => setRollShowcase(null)} /> : null}
+      {gameOpen ? <StarfallGame items={items} onClose={() => setGameOpen(false)} /> : null}
     </>
   )
 }
