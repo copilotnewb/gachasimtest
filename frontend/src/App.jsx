@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from './api.js'
+import GachaGame from './GachaGame.jsx'
 
 const ROLL_ANIMATION_DURATION = 4200
 const ROLL_CARD_WIDTH = 120
@@ -408,6 +409,7 @@ function Main({ user, setUser, onLogout }) {
             <Inventory items={items} />
           </div>
           <div className="stack">
+            <GachaGame items={items} />
             <CollectionTracker banners={banners} items={items} />
             <div className="card">
               <h3>About</h3>
