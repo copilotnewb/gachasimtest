@@ -292,7 +292,7 @@ function initialLogic(units) {
   }
 }
 
-export default function GachaGame({ items }) {
+export default function GachaGame({ items, className = 'card', isExpanded = false, onToggleExpand }) {
   const units = useMemo(() => buildUnits(items), [items])
   const enemiesRef = useRef([])
   const shotsRef = useRef([])
@@ -357,11 +357,25 @@ export default function GachaGame({ items }) {
 
   const stats = snapshot.stats
 
+  const rootClassName = ['game-card', className, isExpanded ? 'game-card-expanded' : '']
+    .filter(Boolean)
+    .join(' ')
+
   return (
-    <div className="card game-card">
-      <div className="row">
+    <div className={rootClassName}>
+      <div className="row game-header">
         <h3>Crystal Siege 3D</h3>
         <div className="spacer" />
+        {onToggleExpand ? (
+          <button
+            type="button"
+            className="btn secondary game-expand-button"
+            onClick={onToggleExpand}
+            aria-expanded={isExpanded}
+          >
+            {isExpanded ? 'Exit Full View' : 'Expand Arena'}
+          </button>
+        ) : null}
         <div className="row game-buttons">
           <button className="btn secondary" onClick={resetGame}>Reset</button>
           {running ? (

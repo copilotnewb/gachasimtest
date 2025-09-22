@@ -287,7 +287,7 @@ function Inventory({ items }) {
   )
 }
 
-function CollectionTracker({ banners, items }) {
+function CollectionTracker({ banners, items, className = 'card' }) {
   const ownedNames = useMemo(() => new Set(items.map(it => it.name)), [items])
   const rarityOrder = ['ultra', 'rare', 'common']
   const rarityLabels = {
@@ -298,7 +298,7 @@ function CollectionTracker({ banners, items }) {
 
   if (banners.length === 0) {
     return (
-      <div className="card">
+      <div className={[className, 'collection-tracker'].filter(Boolean).join(' ')}>
         <h3>Collection Tracker</h3>
         <div className="muted">No active banners to track right now.</div>
       </div>
@@ -306,7 +306,7 @@ function CollectionTracker({ banners, items }) {
   }
 
   return (
-    <div className="card">
+    <div className={[className, 'collection-tracker'].filter(Boolean).join(' ')}>
       <h3>Collection Tracker</h3>
       <div className="stack">
         {banners.map(b => {
@@ -357,12 +357,44 @@ function Main({ user, setUser, onLogout }) {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
   const [rollShowcase, setRollShowcase] = useState(null)
+  const [activeTab, setActiveTab] = useState('collection')
+  const [gameExpanded, setGameExpanded] = useState(false)
 
   async function loadAll() {
     const [bs, inv, me] = await Promise.all([api.banners(), api.inventory(), api.auth.me()])
     setBanners(bs); setItems(inv); setUser(me);
   }
   useEffect(() => { loadAll().catch(console.error) }, [])
+
+  useEffect(() => {
+    if (activeTab !== 'game' && gameExpanded) {
+      setGameExpanded(false)
+    }
+  }, [activeTab, gameExpanded])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined
+    const previousOverflow = document.body.style.overflow
+    if (gameExpanded) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [gameExpanded])
+
+  useEffect(() => {
+    if (!gameExpanded || typeof window === 'undefined') return undefined
+    const onKey = event => {
+      if (event.key === 'Escape') {
+        setGameExpanded(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [gameExpanded])
 
   async function roll(bannerId, times) {
     setBusy(true); setMsg('')
@@ -409,8 +441,57 @@ function Main({ user, setUser, onLogout }) {
             <Inventory items={items} />
           </div>
           <div className="stack">
-            <GachaGame items={items} />
-            <CollectionTracker banners={banners} items={items} />
+            <div className="card tabbed-card">
+              <div className="tab-bar" role="tablist" aria-label="Secondary views">
+                <button
+                  type="button"
+                  id="tab-collection"
+                  role="tab"
+                  aria-selected={activeTab === 'collection'}
+                  aria-controls="collection-panel"
+                  className={`tab-button ${activeTab === 'collection' ? 'is-active' : ''}`}
+                  onClick={() => setActiveTab('collection')}
+                >
+                  Collection Tracker
+                </button>
+                <button
+                  type="button"
+                  id="tab-game"
+                  role="tab"
+                  aria-selected={activeTab === 'game'}
+                  aria-controls="game-panel"
+                  className={`tab-button ${activeTab === 'game' ? 'is-active' : ''}`}
+                  onClick={() => setActiveTab('game')}
+                >
+                  Crystal Siege 3D
+                </button>
+              </div>
+              <div className="tab-content">
+                <div
+                  id="collection-panel"
+                  role="tabpanel"
+                  aria-labelledby="tab-collection"
+                  hidden={activeTab !== 'collection'}
+                  className="tab-panel"
+                >
+                  <CollectionTracker banners={banners} items={items} className="" />
+                </div>
+                <div
+                  id="game-panel"
+                  role="tabpanel"
+                  aria-labelledby="tab-game"
+                  hidden={activeTab !== 'game'}
+                  className="tab-panel"
+                >
+                  <GachaGame
+                    items={items}
+                    className=""
+                    isExpanded={gameExpanded}
+                    onToggleExpand={() => setGameExpanded(expanded => !expanded)}
+                  />
+                </div>
+              </div>
+            </div>
             <div className="card">
               <h3>About</h3>
               <p className="muted">All game logic runs on the backend: RNG, pity, banner rotation, and database writes. The frontend is a thin client.</p>
@@ -424,6 +505,7 @@ function Main({ user, setUser, onLogout }) {
           </div>
         </div>
       </div>
+      {gameExpanded ? <div className="game-expand-overlay" onClick={() => setGameExpanded(false)} /> : null}
       {rollShowcase ? <RollAnimationOverlay data={rollShowcase} onClose={() => setRollShowcase(null)} /> : null}
     </>
   )
