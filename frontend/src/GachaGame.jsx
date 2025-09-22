@@ -308,6 +308,7 @@ export default function GachaGame({ items }) {
   })
   const [running, setRunning] = useState(false)
   const [gameOver, setGameOver] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
   const resetGame = useCallback(() => {
     enemiesRef.current = []
@@ -357,105 +358,136 @@ export default function GachaGame({ items }) {
 
   const stats = snapshot.stats
 
+  useEffect(() => {
+    if (!expanded) return undefined
+    if (typeof document === 'undefined') return undefined
+    const { style } = document.body
+    const previous = style.overflow
+    style.overflow = 'hidden'
+    return () => {
+      style.overflow = previous
+    }
+  }, [expanded])
+
+  useEffect(() => {
+    if (!expanded) return undefined
+    const handler = event => {
+      if (event.key === 'Escape') {
+        setExpanded(false)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [expanded])
+
   return (
-    <div className="card game-card">
-      <div className="row">
-        <h3>Crystal Siege 3D</h3>
-        <div className="spacer" />
-        <div className="row game-buttons">
-          <button className="btn secondary" onClick={resetGame}>Reset</button>
-          {running ? (
-            <button className="btn secondary" onClick={pauseGame}>Pause</button>
-          ) : (
-            <button className="btn" onClick={startGame} disabled={!units.length}>
-              {gameOver ? 'Restart' : 'Start Battle'}
+    <>
+      {expanded ? <div className="game-expand-backdrop" onClick={() => setExpanded(false)} aria-hidden="true" /> : null}
+      <div className={`card game-card ${expanded ? 'is-expanded' : ''}`}>
+        <div className="row">
+          <h3>Crystal Siege 3D</h3>
+          <div className="spacer" />
+          <div className="row game-buttons">
+            <button
+              className="btn secondary"
+              onClick={() => setExpanded(prev => !prev)}
+            >
+              {expanded ? 'Close Expanded View' : 'Expand Arena'}
             </button>
+            <button className="btn secondary" onClick={resetGame}>Reset</button>
+            {running ? (
+              <button className="btn secondary" onClick={pauseGame}>Pause</button>
+            ) : (
+              <button className="btn" onClick={startGame} disabled={!units.length}>
+                {gameOver ? 'Restart' : 'Start Battle'}
+              </button>
+            )}
+          </div>
+        </div>
+        <p className="muted">
+          Deploy your pulls as arcane turrets to guard the central crystal. Each rarity boosts range, damage, and fire rate. Survive as long as you can!
+        </p>
+        <div className="arena-wrapper">
+          {units.length ? (
+            <>
+              <Canvas className="arena-canvas" shadows camera={{ position: [0, 10, 18], fov: 50 }}>
+                <color attach="background" args={['#04060b']} />
+                <ambientLight intensity={0.4} />
+                <spotLight position={[0, 16, 6]} angle={0.6} penumbra={0.35} intensity={1.5} castShadow />
+                <pointLight position={[0, 6, -8]} intensity={0.6} />
+                <GameLoop
+                  units={units}
+                  logicRef={logicRef}
+                  enemiesRef={enemiesRef}
+                  shotsRef={shotsRef}
+                  statsRef={statsRef}
+                  running={running && logicRef.current?.running}
+                  onGameOver={handleGameOver}
+                  gameOverRef={gameOverRef}
+                />
+                <ArenaFloor />
+                {units.map(unit => (
+                  <Turret key={unit.key} unit={unit} />
+                ))}
+                {snapshot.enemies.map(enemy => (
+                  <Enemy key={enemy.id} enemy={enemy} />
+                ))}
+                {snapshot.shots.map(shot => (
+                  <ShotBeam key={shot.id} shot={shot} />
+                ))}
+                <OrbitControls enablePan={false} minDistance={9} maxDistance={24} maxPolarAngle={Math.PI / 2.2} />
+              </Canvas>
+              <div className="arena-hud">
+                <div>
+                  <div className="hud-title">Wave</div>
+                  <div className="hud-value">{stats.wave}</div>
+                </div>
+                <div>
+                  <div className="hud-title">Score</div>
+                  <div className="hud-value">{Math.round(stats.score)}</div>
+                </div>
+                <div>
+                  <div className="hud-title">Lives</div>
+                  <div className={`hud-value ${stats.lives <= 1 ? 'hud-danger' : ''}`}>{stats.lives}</div>
+                </div>
+                <div>
+                  <div className="hud-title">Units</div>
+                  <div className="hud-value">{units.length}</div>
+                </div>
+              </div>
+              {gameOver ? (
+                <div className="arena-overlay">
+                  <strong>Crystal shattered!</strong>
+                  <span>Your score: {Math.round(stats.score)}</span>
+                  <span>Press Start to rally again.</span>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <div className="arena-empty">
+              <div>
+                <strong>No defenders yet.</strong>
+                <span>Roll on a banner to unlock units for the arena.</span>
+              </div>
+            </div>
           )}
         </div>
-      </div>
-      <p className="muted">
-        Deploy your pulls as arcane turrets to guard the central crystal. Each rarity boosts range, damage, and fire rate. Survive as long as you can!
-      </p>
-      <div className="arena-wrapper">
         {units.length ? (
-          <>
-            <Canvas className="arena-canvas" shadows camera={{ position: [0, 10, 18], fov: 50 }}>
-              <color attach="background" args={['#04060b']} />
-              <ambientLight intensity={0.4} />
-              <spotLight position={[0, 16, 6]} angle={0.6} penumbra={0.35} intensity={1.5} castShadow />
-              <pointLight position={[0, 6, -8]} intensity={0.6} />
-              <GameLoop
-                units={units}
-                logicRef={logicRef}
-                enemiesRef={enemiesRef}
-                shotsRef={shotsRef}
-                statsRef={statsRef}
-                running={running && logicRef.current?.running}
-                onGameOver={handleGameOver}
-                gameOverRef={gameOverRef}
-              />
-              <ArenaFloor />
-              {units.map(unit => (
-                <Turret key={unit.key} unit={unit} />
-              ))}
-              {snapshot.enemies.map(enemy => (
-                <Enemy key={enemy.id} enemy={enemy} />
-              ))}
-              {snapshot.shots.map(shot => (
-                <ShotBeam key={shot.id} shot={shot} />
-              ))}
-              <OrbitControls enablePan={false} minDistance={9} maxDistance={24} maxPolarAngle={Math.PI / 2.2} />
-            </Canvas>
-            <div className="arena-hud">
-              <div>
-                <div className="hud-title">Wave</div>
-                <div className="hud-value">{stats.wave}</div>
+          <div className="unit-grid">
+            {units.map(unit => (
+              <div key={unit.key} className="unit-card">
+                <div className={`unit-title rarity-${unit.rarity}`}>{unit.name}</div>
+                <div className="unit-meta">
+                  <span>Range {unit.range.toFixed(1)}</span>
+                  <span>Damage {unit.damage}</span>
+                  <span>Rate {unit.fireRate.toFixed(2)}/s</span>
+                </div>
+                <div className="muted">{unit.label} rarity bonus active.</div>
               </div>
-              <div>
-                <div className="hud-title">Score</div>
-                <div className="hud-value">{Math.round(stats.score)}</div>
-              </div>
-              <div>
-                <div className="hud-title">Lives</div>
-                <div className={`hud-value ${stats.lives <= 1 ? 'hud-danger' : ''}`}>{stats.lives}</div>
-              </div>
-              <div>
-                <div className="hud-title">Units</div>
-                <div className="hud-value">{units.length}</div>
-              </div>
-            </div>
-            {gameOver ? (
-              <div className="arena-overlay">
-                <strong>Crystal shattered!</strong>
-                <span>Your score: {Math.round(stats.score)}</span>
-                <span>Press Start to rally again.</span>
-              </div>
-            ) : null}
-          </>
-        ) : (
-          <div className="arena-empty">
-            <div>
-              <strong>No defenders yet.</strong>
-              <span>Roll on a banner to unlock units for the arena.</span>
-            </div>
+            ))}
           </div>
-        )}
+        ) : null}
       </div>
-      {units.length ? (
-        <div className="unit-grid">
-          {units.map(unit => (
-            <div key={unit.key} className="unit-card">
-              <div className={`unit-title rarity-${unit.rarity}`}>{unit.name}</div>
-              <div className="unit-meta">
-                <span>Range {unit.range.toFixed(1)}</span>
-                <span>Damage {unit.damage}</span>
-                <span>Rate {unit.fireRate.toFixed(2)}/s</span>
-              </div>
-              <div className="muted">{unit.label} rarity bonus active.</div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </div>
+    </>
   )
 }

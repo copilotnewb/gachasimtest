@@ -357,6 +357,7 @@ function Main({ user, setUser, onLogout }) {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
   const [rollShowcase, setRollShowcase] = useState(null)
+  const [activeTab, setActiveTab] = useState('overview')
 
   async function loadAll() {
     const [bs, inv, me] = await Promise.all([api.banners(), api.inventory(), api.auth.me()])
@@ -405,22 +406,63 @@ function Main({ user, setUser, onLogout }) {
               <div className="stack">
                 {banners.map(b => <BannerCard key={b.id} b={b} onRoll={roll} busy={busy} />)}
               </div>
+              {msg ? <div className="toast">{msg}</div> : null}
             </div>
             <Inventory items={items} />
           </div>
           <div className="stack">
-            <GachaGame items={items} />
-            <CollectionTracker banners={banners} items={items} />
-            <div className="card">
-              <h3>About</h3>
-              <p className="muted">All game logic runs on the backend: RNG, pity, banner rotation, and database writes. The frontend is a thin client.</p>
-              <ul>
-                <li><b>Pity:</b> Rare at 10, Ultra at 90</li>
-                <li><b>Cost:</b> 160 gems per roll (10x = 1440)</li>
-                <li><b>Daily:</b> +100 (manual) and +300 (cron to all users at midnight)</li>
-              </ul>
-              {msg ? <div className="toast">{msg}</div> : null}
+            <div className="tab-switcher" role="tablist" aria-label="Game and collection views">
+              <button
+                type="button"
+                id="tab-btn-overview"
+                role="tab"
+                aria-selected={activeTab === 'overview'}
+                aria-controls="tab-panel-overview"
+                className={`tab-button ${activeTab === 'overview' ? 'is-active' : ''}`}
+                onClick={() => setActiveTab('overview')}
+              >
+                Overview
+              </button>
+              <button
+                type="button"
+                id="tab-btn-arena"
+                role="tab"
+                aria-selected={activeTab === 'arena'}
+                aria-controls="tab-panel-arena"
+                className={`tab-button ${activeTab === 'arena' ? 'is-active' : ''}`}
+                onClick={() => setActiveTab('arena')}
+              >
+                Crystal Siege 3D
+              </button>
             </div>
+            {activeTab === 'arena' ? (
+              <div
+                id="tab-panel-arena"
+                role="tabpanel"
+                aria-labelledby="tab-btn-arena"
+                className="tab-panel"
+              >
+                <GachaGame items={items} />
+              </div>
+            ) : (
+              <div
+                id="tab-panel-overview"
+                role="tabpanel"
+                aria-labelledby="tab-btn-overview"
+                className="tab-panel"
+              >
+                <CollectionTracker banners={banners} items={items} />
+                <div className="card">
+                  <h3>About</h3>
+                  <p className="muted">All game logic runs on the backend: RNG, pity, banner rotation, and database writes. The frontend is a thin client.</p>
+                  <ul>
+                    <li><b>Pity:</b> Rare at 10, Ultra at 90</li>
+                    <li><b>Cost:</b> 160 gems per roll (10x = 1440)</li>
+                    <li><b>Daily:</b> +100 (manual) and +300 (cron to all users at midnight)</li>
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
