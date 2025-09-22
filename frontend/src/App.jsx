@@ -395,75 +395,77 @@ function Main({ user, setUser, onLogout }) {
     <>
       <div className="wrap">
         <Nav user={user} onLogout={onLogout} />
-        <div className="grid" style={{alignItems:'start'}}>
-          <div className="stack">
-            <div className="card">
-              <div className="row">
-                <h3>Summon Banners</h3>
-                <div className="spacer" />
-                <button className="btn secondary" disabled={busy} onClick={claimDaily}>Claim daily (+100)</button>
-              </div>
-              <div className="stack">
-                {banners.map(b => <BannerCard key={b.id} b={b} onRoll={roll} busy={busy} />)}
-              </div>
-              {msg ? <div className="toast">{msg}</div> : null}
-            </div>
-            <Inventory items={items} />
+        <div className="page-tabs">
+          <div className="tab-switcher" role="tablist" aria-label="Game and collection views">
+            <button
+              type="button"
+              id="tab-btn-overview"
+              role="tab"
+              aria-selected={activeTab === 'overview'}
+              aria-controls="tab-panel-overview"
+              className={`tab-button ${activeTab === 'overview' ? 'is-active' : ''}`}
+              onClick={() => setActiveTab('overview')}
+            >
+              Overview
+            </button>
+            <button
+              type="button"
+              id="tab-btn-arena"
+              role="tab"
+              aria-selected={activeTab === 'arena'}
+              aria-controls="tab-panel-arena"
+              className={`tab-button ${activeTab === 'arena' ? 'is-active' : ''}`}
+              onClick={() => setActiveTab('arena')}
+            >
+              Crystal Siege 3D
+            </button>
           </div>
-          <div className="stack">
-            <div className="tab-switcher" role="tablist" aria-label="Game and collection views">
-              <button
-                type="button"
-                id="tab-btn-overview"
-                role="tab"
-                aria-selected={activeTab === 'overview'}
-                aria-controls="tab-panel-overview"
-                className={`tab-button ${activeTab === 'overview' ? 'is-active' : ''}`}
-                onClick={() => setActiveTab('overview')}
-              >
-                Overview
-              </button>
-              <button
-                type="button"
-                id="tab-btn-arena"
-                role="tab"
-                aria-selected={activeTab === 'arena'}
-                aria-controls="tab-panel-arena"
-                className={`tab-button ${activeTab === 'arena' ? 'is-active' : ''}`}
-                onClick={() => setActiveTab('arena')}
-              >
-                Crystal Siege 3D
-              </button>
-            </div>
-            {activeTab === 'arena' ? (
-              <div
-                id="tab-panel-arena"
-                role="tabpanel"
-                aria-labelledby="tab-btn-arena"
-                className="tab-panel"
-              >
-                <GachaGame items={items} />
-              </div>
-            ) : (
-              <div
-                id="tab-panel-overview"
-                role="tabpanel"
-                aria-labelledby="tab-btn-overview"
-                className="tab-panel"
-              >
-                <CollectionTracker banners={banners} items={items} />
-                <div className="card">
-                  <h3>About</h3>
-                  <p className="muted">All game logic runs on the backend: RNG, pity, banner rotation, and database writes. The frontend is a thin client.</p>
-                  <ul>
-                    <li><b>Pity:</b> Rare at 10, Ultra at 90</li>
-                    <li><b>Cost:</b> 160 gems per roll (10x = 1440)</li>
-                    <li><b>Daily:</b> +100 (manual) and +300 (cron to all users at midnight)</li>
-                  </ul>
+          {activeTab === 'overview' ? (
+            <div
+              id="tab-panel-overview"
+              role="tabpanel"
+              aria-labelledby="tab-btn-overview"
+              className="tab-panel tab-panel-overview"
+            >
+              <div className="grid" style={{alignItems:'start'}}>
+                <div className="stack">
+                  <div className="card">
+                    <div className="row">
+                      <h3>Summon Banners</h3>
+                      <div className="spacer" />
+                      <button className="btn secondary" disabled={busy} onClick={claimDaily}>Claim daily (+100)</button>
+                    </div>
+                    <div className="stack">
+                      {banners.map(b => <BannerCard key={b.id} b={b} onRoll={roll} busy={busy} />)}
+                    </div>
+                    {msg ? <div className="toast">{msg}</div> : null}
+                  </div>
+                  <Inventory items={items} />
+                </div>
+                <div className="stack">
+                  <CollectionTracker banners={banners} items={items} />
+                  <div className="card">
+                    <h3>About</h3>
+                    <p className="muted">All game logic runs on the backend: RNG, pity, banner rotation, and database writes. The frontend is a thin client.</p>
+                    <ul>
+                      <li><b>Pity:</b> Rare at 10, Ultra at 90</li>
+                      <li><b>Cost:</b> 160 gems per roll (10x = 1440)</li>
+                      <li><b>Daily:</b> +100 (manual) and +300 (cron to all users at midnight)</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div
+              id="tab-panel-arena"
+              role="tabpanel"
+              aria-labelledby="tab-btn-arena"
+              className="tab-panel tab-panel-arena"
+            >
+              <GachaGame items={items} />
+            </div>
+          )}
         </div>
       </div>
       {rollShowcase ? <RollAnimationOverlay data={rollShowcase} onClose={() => setRollShowcase(null)} /> : null}
