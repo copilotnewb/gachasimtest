@@ -78,7 +78,7 @@ app.post('/api/claim/daily', authMiddleware, (req, res) => {
   const today = new Date().toISOString().slice(0,10);
   const row = db.prepare('SELECT last_daily_claim FROM users WHERE id = ?').get(req.user.id);
   if (row?.last_daily_claim === today) return res.status(400).json({ error: 'already claimed today' });
-  db.prepare('UPDATE users SET gems = gems + 100, last_daily_claim = ? WHERE id = ?').run(today, req.user.id);
+  db.prepare('UPDATE users SET gems = gems + 10000, last_daily_claim = ? WHERE id = ?').run(today, req.user.id);
   const updated = db.prepare('SELECT gems FROM users WHERE id = ?').get(req.user.id);
   res.json({ ok: true, gems: updated.gems, awarded: 100 });
 });
