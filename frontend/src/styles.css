@@ -221,6 +221,11 @@ a { color: var(--accent); text-decoration: none; }
   color: #fff7d6;
   box-shadow: 0 0 18px rgba(255,214,106,.35);
 }
+.page-tabs {
+  display: grid;
+  gap: 16px;
+}
+
 .tab-switcher {
   display: flex;
   gap: 8px;
@@ -258,6 +263,9 @@ a { color: var(--accent); text-decoration: none; }
 .tab-panel {
   display: grid;
   gap: 10px;
+}
+.tab-panel-overview {
+  display: block;
 }
 @keyframes ultra-shimmer {
   0% { background-position: 0% 50%; }
